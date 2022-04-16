@@ -20,9 +20,14 @@ internal static class BLM
         Freeze = 159,
         Flare = 162,
         LeyLines = 3573,
+        Sharpcast = 3574,
         Blizzard4 = 3576,
         Fire4 = 3577,
         BetweenTheLines = 7419,
+        Triplecast = 7421,
+        Foul = 7422,
+        Thunder2 = 7447,
+        Swiftcast = 7561,
         Despair = 16505,
         UmbralSoul = 16506,
         Xenoglossy = 16507,
@@ -36,7 +41,10 @@ internal static class BLM
         public const ushort
             Thundercloud = 164,
             Firestarter = 165,
+            Swiftcast = 167,
             LeyLines = 737,
+            Sharpcast = 867,
+            Triplecast = 1211,
             EnhancedFlare = 2960;
     }
 
@@ -44,26 +52,220 @@ internal static class BLM
     {
         public const ushort
             Thunder = 161,
-            Thunder3 = 163;
+            Thunder2 = 162,
+            Thunder3 = 163,
+            Thunder4 = 1210;
     }
 
     public static class Levels
     {
         public const byte
+            Blizzard2 = 12,
+            Fire2 = 18,
+            Swiftcast = 18,
+            Thunder2 = 26,
             Fire3 = 35,
             Blizzard3 = 35,
-            Freeze = 40,
+            Freeze = 58,
             Thunder3 = 45,
             Flare = 50,
+            Sharpcast = 54,
             Blizzard4 = 58,
             Fire4 = 60,
             BetweenTheLines = 62,
+            Triplecast = 66,
+            Foul = 70,
             Despair = 72,
             UmbralSoul = 76,
             Xenoglossy = 80,
             HighFire2 = 82,
             HighBlizzard2 = 82,
             Paradox = 90;
+    }
+}
+
+internal class BlackMageXCombo : CustomCombo
+{
+    protected internal override CustomComboPreset Preset { get; } = CustomComboPreset.BlackMageXCombo;
+
+    protected override uint Invoke(uint actionID, uint lastComboMove, float comboTime, byte level)
+    {
+        // only work with Xenoglossy
+        if (actionID != BLM.Xenoglossy) return actionID;
+
+        var gauge = GetJobGauge<BLMGauge>();
+
+        if (level >= BLM.Levels.Sharpcast && HasCharges(BLM.Sharpcast) && !HasEffect(BLM.Buffs.Sharpcast))
+            return BLM.Sharpcast;
+
+        if (!gauge.InAstralFire && !gauge.InUmbralIce)
+        {
+            if (lastComboMove != OriginalHook(BLM.Thunder) && !HasEffect(BLM.Buffs.Swiftcast))
+                return OriginalHook(BLM.Thunder);
+
+            if (gauge.PolyglotStacks > 0)
+            {
+                if (level >= BLM.Levels.Xenoglossy)
+                    return BLM.Xenoglossy;
+
+                if (level >= BLM.Levels.Foul)
+                    return BLM.Foul;
+            }
+
+            if (level >= BLM.Levels.Swiftcast && IsOffCooldown(BLM.Swiftcast) && !HasEffect(BLM.Buffs.Swiftcast))
+                return BLM.Swiftcast;
+
+            if (level < 35)
+            {
+                if (LocalPlayer?.CurrentMp >= 5000) return BLM.Fire;
+
+                return BLM.Blizzard;
+            }
+
+            return level >= BLM.Levels.Fire3 ? BLM.Fire3 : BLM.Fire;
+        }
+
+        if (gauge.InUmbralIce)
+        {
+            if (gauge.PolyglotStacks > 0)
+            {
+                if (level >= BLM.Levels.Xenoglossy)
+                    return BLM.Xenoglossy;
+
+                if (level >= BLM.Levels.Foul)
+                    return BLM.Foul;
+            }
+
+            //if (level >= BLM.Levels.Blizzard4 && gauge.UmbralHearts == 0)
+            //    return BLM.Blizzard4;
+
+            if (lastComboMove != OriginalHook(BLM.Thunder))
+            {
+                if (!(FindTargetEffect(BLM.Debuffs.Thunder)?.RemainingTime >= 12.0 || FindTargetEffect(BLM.Debuffs.Thunder3)?.RemainingTime >= 12.0))
+                    return OriginalHook(BLM.Thunder);
+            }
+
+            return level >= BLM.Levels.Fire3 ? BLM.Fire3 : BLM.Fire;
+        }
+
+        if (gauge.InAstralFire)
+        {
+            if (gauge.ElementTimeRemaining >= 9000 && LocalPlayer?.CurrentMp >= 6000 && !HasEffect(BLM.Buffs.Triplecast) && !HasEffect(BLM.Buffs.Swiftcast))
+            {
+                if (level >= BLM.Levels.Triplecast && HasCharges(BLM.Triplecast))
+                    return BLM.Triplecast;
+
+                if (level >= BLM.Levels.Swiftcast && IsOffCooldown(BLM.Swiftcast))
+                    return BLM.Swiftcast;
+            }
+
+            if (level >= BLM.Levels.Despair &&
+                LocalPlayer?.CurrentMp >= 800 &&
+                (LocalPlayer?.CurrentMp < 2500 || gauge.ElementTimeRemaining < 6000))
+            {
+                return BLM.Despair;
+            }
+
+            if (LocalPlayer?.CurrentMp < 2500 || gauge.ElementTimeRemaining < 3500)
+            {
+                return level >= BLM.Levels.Blizzard3 ? BLM.Blizzard3 : BLM.Blizzard;
+            }
+
+            if (level >= BLM.Levels.Fire4)
+                return BLM.Fire4;
+
+            if (level >= BLM.Levels.Fire3 && HasEffect(BLM.Buffs.Firestarter))
+                return BLM.Fire3;
+
+            return BLM.Fire;
+        }
+
+        if (level >= BLM.Levels.Fire3 && HasEffect(BLM.Buffs.Firestarter))
+            return BLM.Fire3;
+
+        return BLM.Fire;
+    }
+}
+
+internal class BlackMageAoEXCombo : CustomCombo
+{
+    protected internal override CustomComboPreset Preset { get; } = CustomComboPreset.BlackMageAoEXCombo;
+
+    protected override uint Invoke(uint actionID, uint lastComboMove, float comboTime, byte level)
+    {
+        // only work with Foul
+        if (actionID != BLM.Foul) return actionID;
+
+        var gauge = GetJobGauge<BLMGauge>();
+
+        if (level >= BLM.Levels.Sharpcast && HasCharges(BLM.Sharpcast) && !HasEffect(BLM.Buffs.Sharpcast))
+            return BLM.Sharpcast;
+
+        if (level >= BLM.Levels.Foul && gauge.PolyglotStacks > 0)
+            return BLM.Foul;
+
+        if (!gauge.InAstralFire && !gauge.InUmbralIce)
+        {
+            if (lastComboMove != OriginalHook(BLM.Thunder2) && level >= BLM.Levels.Thunder2)
+            {
+                if (HasEffect(BLM.Buffs.Thundercloud))
+                    return OriginalHook(BLM.Thunder2);
+
+                if (level >= BLM.Levels.Swiftcast && IsOffCooldown(BLM.Swiftcast) && !HasEffect(BLM.Buffs.Swiftcast))
+                    return BLM.Swiftcast;
+
+                return OriginalHook(BLM.Thunder2);
+            }
+
+            if (level < 35)
+            {
+                if (LocalPlayer?.CurrentMp >= 5000) return BLM.Fire2;
+
+                return BLM.Blizzard2;
+            }
+
+            return OriginalHook(BLM.Blizzard2);
+        }
+
+        if (gauge.InUmbralIce)
+        {
+            if (level >= BLM.Levels.Freeze && gauge.UmbralHearts == 0)
+                return BLM.Freeze;
+
+            if (lastComboMove != OriginalHook(BLM.Thunder2) && level >= BLM.Levels.Thunder2)
+            {
+                if (!(FindTargetEffect(BLM.Debuffs.Thunder2)?.RemainingTime >= 7.0 || FindTargetEffect(BLM.Debuffs.Thunder4)?.RemainingTime >= 7.0))
+                    return OriginalHook(BLM.Thunder2);
+            }
+
+            return level >= BLM.Levels.Fire2 ? OriginalHook(BLM.Fire2) : OriginalHook(BLM.Blizzard2);
+        }
+
+        if (gauge.InAstralFire)
+        {
+            if (LocalPlayer?.CurrentMp >= 6000 && !HasEffect(BLM.Buffs.Triplecast) && !HasEffect(BLM.Buffs.Swiftcast))
+            {
+                if (level >= BLM.Levels.Triplecast && HasCharges(BLM.Triplecast))
+                    return BLM.Triplecast;
+
+                if (level >= BLM.Levels.Swiftcast && IsOffCooldown(BLM.Swiftcast))
+                    return BLM.Swiftcast;
+            }
+
+            if (LocalPlayer?.CurrentMp >= 1000 && level >= BLM.Levels.Flare && HasEffect(BLM.Buffs.EnhancedFlare))
+                return BLM.Flare;
+
+            if (LocalPlayer?.CurrentMp < 3000)
+            {
+                if (!InCombat() && !HasTarget()) return BLM.Transpose;
+
+                return OriginalHook(BLM.Blizzard2);
+            }
+
+            return level >= BLM.Levels.Fire2 ? OriginalHook(BLM.Fire2) : OriginalHook(BLM.Blizzard2);
+        }
+
+        return OriginalHook(BLM.Blizzard2);
     }
 }
 

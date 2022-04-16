@@ -173,6 +173,12 @@ public enum CustomComboPreset
     [CustomComboInfo("Scathe/Xenoglossy Feature", "Scathe becomes Xenoglossy when available.", BLM.JobID)]
     BlackScatheFeature = 2507,
 
+    [CustomComboInfo("Black Mage X Combo", "Black Mage X Combo", BLM.JobID)]
+    BlackMageXCombo = 2591,
+
+    [CustomComboInfo("Black Mage AoE X Combo", "Black Mage AoE X Combo", BLM.JobID)]
+    BlackMageAoEXCombo = 2592,
+
     #endregion
     // ====================================================================================
     #region BARD
@@ -472,6 +478,12 @@ public enum CustomComboPreset
 
     [CustomComboInfo("Riddle of Fire and Wind", "Replace Riddle of Fire with Riddle of Wind if the former is on cooldown and the latter is not.", MNK.JobID)]
     MonkRiddleOfFireWind = 2010,
+
+    [CustomComboInfo("Monk X Combo", "X Combo", MNK.JobID)]
+    MonkXCombo = 2091,
+
+    [CustomComboInfo("Monk X AoE Combo", "X AoE Combo", MNK.JobID)]
+    MonkXAoECombo = 2092,
 
     #endregion
     // ====================================================================================
